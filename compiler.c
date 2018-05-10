@@ -80,18 +80,18 @@ bool strcmp(char *str1, char *str2) {
 int atoi(char *p)
 {
 	int n = 0, f = 0, b = 10;
-    for(;;p++) {
-        switch(*p) {
-        case '-':
-            f++;
-        case '+':
-            p++;
+	for(;;p++) {
+        	switch(*p) {
+        	case '-':
+			f++;
+		case '+':
+			p++;
 		case '0': {
 			if(++*p=='x'||*p=='X') b = 16;
 		}
-        }
-        break;
-    }
+        	}
+        	break;
+	}
 	if(b==10) {
 		switch(p[strlen(p)-2]) {
 			case 'h':
@@ -108,9 +108,8 @@ int atoi(char *p)
 				break;
 		}
 	}
-    while(((*p-'0')>=0)&&((*p-'0')<=(b-1)))
-        n = n*b + (*p++ - '0');
-    return(f? -n: n);
+	while(((*p-'0')>=0)&&((*p-'0')<=(b-1))) n = n*b + (*p++ - '0');
+	return(f? -n: n);
 }
 #endif
 
