@@ -161,6 +161,4 @@ typedef struct __attribute__((packed)) LABEL {
   int loc; //location in code
 } label;
 
-#ifndef _MALLOC_H
-
 #endif
