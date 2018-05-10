@@ -148,4 +148,19 @@ const char *mov = "MOV";
  *
  */
 
+/**
+ * MORE STUFF GOES HERE (IK THIS COMMENT IS BAD)
+ */
+
+/**
+ * TYPEDEFS
+ */
+
+typedef struct __attribute__((packed)) LABEL {
+  char *name; //label recognition
+  int loc; //location in code
+} label;
+
+#ifndef _MALLOC_H
+
 #endif
