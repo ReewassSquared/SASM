@@ -114,6 +114,8 @@ int seg(char *cr)
 		return 0x4;
 	case gs:
 		return 0x5;
+	default:
+		return 0xFF;
 	}
 }
 
@@ -210,7 +212,7 @@ int reg(char *cr)
 	case db7:
 		ret += 0x87;
 	default:
-		ret += 0xFF;
+		ret = 0xFF;
 	}
 	return ret;
 }
@@ -247,6 +249,23 @@ bool reg16(char *cr)
 	case bp:
 	case si:
 	case di:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool regseg(char *cr)
+{
+	int c = CHKS(cr);
+	switch (c)
+	{
+	case es:
+	case cs:
+	case ss:
+	case ds:
+	case fs:
+	case gs:
 		return true;
 	default:
 		return false;
@@ -321,7 +340,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 		{
 			*out++ = atoi(parse[1]);
 		}
-		else if(strcmp(parse[0], "MOV"))
+		else if (strcmp(parse[0], "MOV"))
 		{
 			int r1 = reg(parse[1]);
 			int r2 = reg(parse[2]);
@@ -330,13 +349,13 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 				#ifdef _BITS16
 				if (reg32(r1)) return -1;
 				#endif
-				if(r2!=0xFF&&r2>=0x70)
+				if (r2!=0xFF&&r2>=0x70)
 				{
-					if(r2>=0xA0)
+					if (r2>=0xA0)
 					{
 						return -1; //dbn, crn access must be reg<-reg
 					}
-					if(r1>=0x70)
+					if (r1>=0x70)
 					{
 						return -1; //dbn, cbn cannot access each other	
 					}
@@ -347,9 +366,9 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 						*out++ = 0xC0 + ((r2&0x0F)<<3) + (r1&0xF0);
 					}
 				}
-				else if (r2!=0xFF&&r1<0x30) //reg<-reg
+				else if (r2!=0xFF) //reg<-reg
 				{
-					if(r1>=0x70)
+					if (r1>=0x70)
 					{
 						*out++ = 0x0F;
 						*out++ 0x22 + ((r1&0x80)>>7);
@@ -365,29 +384,70 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 								return -1; //error- operands must be same size
 							}
 							*out++ = 0x89;
-							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							if (r1>=0X30)
+							{
+								if (!(((r1&0xF==0x6)||(r1&0xF==0x7))&&((r1&0xF0)>>4)!=4))
+								{
+									return -1;
+								}
+								*out++ = 0x67;
+								*out++ = S3(r1&0xF)+(r2&0xF);
+							}
+							else 
+							{
+								*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							}
 							break;
 						case 0:
-							if((r1&0xF0)>>4==1)
+							if ((r1&0xF0)>>4==1)
 							{
 								return -1;
 							}
-							#ifdef _BITS32
-							*out++ = 0x66;
-							#endif
-							*out++ = 0x89;
-							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							if (r1>=0X30)
+							{
+								if (!(((r1&0xF==0x6)||(r1&0xF==0x7))&&((r1&0xF0)>>4)!=4))
+								{
+									return -1;
+								}
+								*out++ = 0x67;
+								#ifdef _BITS32
+								*out++ = 0x66;
+								#endif
+								*out++ = 0x89;
+								*out++ = S3(r1&0xF)+(r2&0xF);
+							}
+							else 
+							{
+								#ifdef _BITS32
+								*out++ = 0x66;
+								#endif
+								*out++ = 0x89;
+								*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							}
 							break;
 						case 2:
-							if((r1&0xF0)>>4==1)
+							if ((r1&0xF0)>>4==1)
 							{
 								return -1;
 							}
-							*out++ = 0x89;
-							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							if (r1>=0X30)
+							{
+								if (!(((r1&0xF==0x6)||(r1&0xF==0x7))&&((r1&0xF0)>>4)!=4))
+								{
+									return -1;
+								}
+								*out++ = 0x67;
+								*out++ = 0x89;
+								*out++ = S3(r1&0xF)+(r2&0xF);
+							}
+							else 
+							{
+								*out++ = 0x89;
+								*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							}
 							break;
 						case 3: //reg<-[reg]
-							if((r1&0xF0)>>4==1)
+							if ((r1&0xF0)>>4==1)
 							{
 								return -1;
 							}
@@ -398,7 +458,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							*out++ = S3(r1&0xF)+(r2&0xF);
 							break;
 						case 4:
-							if((r1&0xF0)>>4!=1)
+							if ((r1&0xF0)>>4!=1)
 							{
 								return -1;
 							}
@@ -406,7 +466,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							*out++ = S3(r1&0xF)+(r2&0xF);
 							break;
 						case 5:
-							if((r1&0xF0)>>4==1)
+							if ((r1&0xF0)>>4==1)
 							{
 								return -1;
 							}
@@ -414,20 +474,70 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							*out++ = S3(r1&0xF)+(r2&0xF);
 							break;
 						}
+					}
 				}
-				else if(r2==0xFF) //either imm mem or imm
+				else if (regseg(parse[2]))
 				{
-					if(r1>=0x70)
+					r2 = seg(parse[2]);
+					if (r1>=0x70||r2==0xFF)
 					{
 						return -1;
 					}
-					if(parse[2][0]=='[') //mem
+					if (isnum(rmbrck(parse[1])))
+					{
+						int imm = LILEND(atoi(rmbrck(parse[1])));
+						*out++ = 0x8C;
+						*out++ = 5 + S3(r2);
+						#ifdef _BITS16
+						*out++ = ((imm&0xFF00)>>8);
+						*out++ = imm&0xFF;
+						#else
+						*out++ = ((imm&0xFF000000)>>24);
+						*out++ = ((imm&0xFF0000)>>16);
+						*out++ = ((imm&0xFF00)>>8);
+						*out++ = (imm&0xFF);
+						#endif
+					}
+					else
+					{
+						switch ((r1&0xF0)>>4)
+						{
+						case 0:	
+						case 2:
+							*out++ = 0x8C;
+							*out++ = C0+S3(r2)+(r1&0xF);
+							break;
+						case 3:
+							if (r1&0xF!=3)
+							{
+								return -1;	
+							}
+							*out++ = 0x67;
+							*out++ = 0x8C;
+							*out++ = S3(r2&0xF)+0x7;
+						case 5:
+							*out++ = 0x8C;
+							*out++ = S3(r2)+(r1&0xF);
+							break;
+						case 1:
+						case 4:
+							return -1;
+						}
+					}
+				}
+				else if (r2==0xFF) //either imm mem or imm
+				{
+					if (r1>=0x70)
+					{
+						return -1;
+					}
+					if (parse[2][0]=='['&&isnum(rmbrck(parse[2]))) //mem
 					{
 						parse[2] = rmbrck(parse[2]);
-						int imm = atoi;
-						if(reg8(parse[1]))
+						int imm = atoi(parse[2]);
+						if (reg8(parse[1]))
 						{
-							if(r1&0xF==0)
+							if (r1&0xF==0)
 							{
 								imm = LILEND(imm);
 								*out++ = 0xA0;
@@ -444,7 +554,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 						}
 						else
 						{
-							if(r1&0xF==0)
+							if (r1&0xF==0)
 							{
 								imm = LILEND(imm);
 								#ifdef _BITS16
@@ -452,7 +562,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 								*out++ = ((imm&0xFF00)>>8);
 								*out++ = imm&0xFF;
 								#else
-								if(reg16(r1))
+								if (reg16(r1))
 								{
 									*out++ = 0x66;
 								}
@@ -472,7 +582,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 								*out++ = ((imm&0xFF00)>>8);
 								*out++ = imm&0xFF;
 								#else
-								if(reg16(r1))
+								if (reg16(r1))
 								{
 									*out++ = 0x66;
 								}
@@ -486,10 +596,10 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							}
 						}
 					}
-					else if(isnum(parse[2][1]))
+					else if (isnum(parse[2]))
 					{
-						int imm = atoi;
-						if(reg8(parse[1]))
+						int imm = atoi(parse[2]);
+						if (reg8(parse[1]))
 						{
 							*out++ = (0xB0 + (r1&0xF));
 							*out++ = ((imm&0xFF00)>>8);
@@ -502,7 +612,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							*out++ = ((imm&0xFF00)>>8);
 							*out++ = imm&0xFF;
 							#else
-							if(reg16(r1))
+							if (reg16(r1))
 							{
 								*out++ = 0x66;
 							}
@@ -516,17 +626,72 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 					}
 				}
 			}
-			else //means r1 is a mem address
+			else if (regseg(parse[1]))
 			{
-				if(parse[1][0]!='['&&isnum(rmbrck(parse[1])))
+				r1 = seg(parse[1]);
+				if(r2>=0x70||r1==0xFF)
 				{
 					return -1;
 				}
-				else if(parse[1][0]=='['&&isnum(rmbrck(parse[1]))) //literal address given
+				if (isnum(rmbrck(parse[2])))
+				{
+					int imm = LILEND(atoi(rmbrck(parse[2])));
+					*out++ = 0x8E;
+					*out++ = 5 + S3(r1);
+					#ifdef _BITS16
+					*out++ = ((imm&0xFF00)>>8);
+					*out++ = imm&0xFF;
+					#else
+					*out++ = ((imm&0xFF000000)>>24);
+					*out++ = ((imm&0xFF0000)>>16);
+					*out++ = ((imm&0xFF00)>>8);
+					*out++ = (imm&0xFF);
+					#endif
+				}
+				else
+				{
+					switch((r2&0xF0)>>4)
+					{
+					case 0:	
+					case 2:
+						*out++ = 0x8E;
+						*out++ = C0+S3(r1)+(r2&0xF);
+						break;
+					case 3:
+					case 5:
+						*out++ = 0x8E;
+						*out++ = S3(r1)+((r2&0xF);
+						break;
+					case 1:
+					case 4:
+						return -1;
+					}
+				}
+			}
+			else //means r1 is a mem address
+			{
+				if (parse[1][0]!='['&&isnum(rmbrck(parse[1])))
+				{
+					return -1;
+				}
+				else if (parse[1][0]=='['&&isnum(rmbrck(parse[1]))) //literal address given
 				{
 					
+					int imm = LILEND(atoi(rmbrck(parse[1])));
+					*out++ = 0x89;
+					*out++ = 5 + S3(r2);
+					#ifdef _BITS16
+					*out++ = ((imm&0xFF00)>>8);
+					*out++ = imm&0xFF;
+					#else
+					*out++ = ((imm&0xFF000000)>>24);
+					*out++ = ((imm&0xFF0000)>>16);
+					*out++ = ((imm&0xFF00)>>8);
+					*out++ = (imm&0xFF);
+					#endif
+					
 				}
-				else if(parse[1][0]=='[') //valid address of label
+				else if (parse[1][0]=='[') //valid address of label
 				{
 					
 				}
