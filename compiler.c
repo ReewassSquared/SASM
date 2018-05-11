@@ -274,6 +274,16 @@ bool reg32(char *cr)
 }
 #endif
 
+char* rmbrck(char* c)
+{
+	char *ret = ++c;
+	for(int i = 0; i < strlen(ret); i++)
+	{
+		if(ret[i]==']') ret[i]='\0';
+	}
+	return ret;
+}
+
 int preprocess(char *c)
 {
 	//while(	
@@ -346,7 +356,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							{
 								return -1;
 							}
-							#ifdef _BITS16
+							#ifdef _BITS32
 							*out++ = 0x66;
 							#endif
 							*out++ = 0x89;
@@ -357,9 +367,6 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							{
 								return -1;
 							}
-							#ifdef _BITS32
-							*out++ = 0x66;
-							#endif
 							*out++ = 0x89;
 							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
 							break;
@@ -368,7 +375,7 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							{
 								return -1;
 							}
-							#ifdef _BITS16
+							#ifdef _BITS32
 							*out++ = 0x66;
 							#endif
 							*out++ = 0x8B;
@@ -387,17 +394,110 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							{
 								return -1;
 							}
-							#ifdef _BITS32
-							*out++ = 0x66;
-							#endif
 							*out++ = 0x8B;
 							*out++ = S3(r1&0xF)+(r2&0xF);
 							break;
 						}
 				}
-				else if(r1==0xFF)
+				else if(r2==0xFF) //either imm mem or imm
 				{
-					//idh the paper w/ my notes rn ill write this later
+					if(r1>=0x70)
+					{
+						return -1;
+					}
+					if(parse[2][0]=='[') //mem
+					{
+						parse[2] = rmbrck(parse[2]);
+						int imm = atoi;
+						if(reg8(parse[1]))
+						{
+							if(r1&0xF==0)
+							{
+								imm = LILEND(imm);
+								*out++ = 0xA0;
+								*out++ = ((imm&0xFF00)>>8);
+								*out++ = imm&0xFF;
+							}
+							else
+							{
+								imm = LILEND(imm);
+								*out++ = 0x8A;
+								*out++ = ((imm&0xFF00)>>8);
+								*out++ = imm&0xFF;
+							}
+						}
+						else
+						{
+							if(r1&0xF==0)
+							{
+								imm = LILEND(imm);
+								#ifdef _BITS16
+								*out++ = 0xA1;
+								*out++ = ((imm&0xFF00)>>8);
+								*out++ = imm&0xFF;
+								#else
+								if(reg16(r1))
+								{
+									*out++ = 0x66;
+								}
+								*out++ = 0xA1;
+								*out++ = ((imm&0xFF000000)>>24);
+								*out++ = ((imm&0xFF0000)>>16);
+								*out++ = ((imm&0xFF00)>>8);
+								*out++ = (imm&0xFF);
+								#endif
+							}
+							else
+							{
+								imm = LILEND(imm);
+								#ifdef _BITS16
+								*out++ = 0x8A;
+								*out++ = (((r1&0xF)<<3) + 5);
+								*out++ = ((imm&0xFF00)>>8);
+								*out++ = imm&0xFF;
+								#else
+								if(reg16(r1))
+								{
+									*out++ = 0x66;
+								}
+								*out++ = 0x8B;
+								*out++ = (((r1&0xF)<<3) + 5);
+								*out++ = ((imm&0xFF000000)>>24);
+								*out++ = ((imm&0xFF0000)>>16);
+								*out++ = ((imm&0xFF00)>>8);
+								*out++ = (imm&0xFF);
+								#endif
+							}
+						}
+					}
+					else if(isnum(parse[2][1]))
+					{
+						int imm = atoi;
+						if(reg8(parse[1]))
+						{
+							*out++ = (0xB0 + (r1&0xF));
+							*out++ = ((imm&0xFF00)>>8);
+							*out++ = imm&0xFF;
+						}
+						else
+						{
+							#ifdef _BITS16
+							*out++ = (0xB8 + (r1&0xF));
+							*out++ = ((imm&0xFF00)>>8);
+							*out++ = imm&0xFF;
+							#else
+							if(reg16(r1))
+							{
+								*out++ = 0x66;
+							}
+							*out++ = (0xB8 + (r1&0xF));
+							*out++ = ((imm&0xFF000000)>>24);
+							*out++ = ((imm&0xFF0000)>>16);
+							*out++ = ((imm&0xFF00)>>8);
+							*out++ = (imm&0xFF);
+							#endif
+						}
+					}
 				}
 			}
 			else
