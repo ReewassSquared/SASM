@@ -284,6 +284,22 @@ char* rmbrck(char* c)
 	return ret;
 }
 
+bool isnum(char *c)
+{
+	if(*c>0x2F&&*c<0x3A)
+	{
+		return true;	
+	}
+	for(int i = 0; i < strlen(c)-1; i++) //hex check case
+	{
+		if(*c<0x30||(*c>0x39&&*c<0x40)||(*c>0x45))
+		{
+			return false;	
+		}
+	}
+	return true; //reached if it is a hex code
+}
+
 int preprocess(char *c)
 {
 	//while(	
@@ -500,9 +516,24 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 					}
 				}
 			}
-			else
+			else //means r1 is a mem address
 			{
-				//uses immediates 
+				if(parse[1][0]!='['&&isnum(rmbrck(parse[1])))
+				{
+					return -1;
+				}
+				else if(parse[1][0]=='['&&isnum(rmbrck(parse[1]))) //literal address given
+				{
+					
+				}
+				else if(parse[1][0]=='[') //valid address of label
+				{
+					
+				}
+				else //valid label
+				{
+					
+				}
 			}
 			
 		}
