@@ -9,6 +9,74 @@
 #ifndef _SASM_H
 #define _SASM_H
 /**
+ * IMPORTANT STUFF I COULDN'T DECIDE WHERE TO PUT
+ */
+#ifndef _STDBOOL_H
+#define bool _Bool
+#define true 1
+#define false 0
+#endif
+
+#ifndef _STDDEF_H
+#define NULL ((void*) 0x0)
+#define offsetof(type, member) ((size_t) & ((type*) 0)->member)
+
+typedef signed ptrdiff_t;
+typedef unsigned size_t;
+
+#endif
+
+#ifndef _STRING_H
+size_t strlen(const char* str)
+{
+	size_t length = 0;
+	for (; str[length] != '\0'; length++);
+	return length;
+}
+
+bool strcmp(char *str1, char *str2) {
+	while(*str1++ == *str2++) {
+		if(*str1 =='\0'||*str2=='\0') return true;
+	}
+	return false;
+}
+
+int atoi(char *p)
+{
+	int n = 0, f = 0, b = 10;
+	for(;;p++) {
+        	switch(*p) {
+        	case '-':
+			f++;
+		case '+':
+			p++;
+		case '0': {
+			if(++*p=='x'||*p=='X') b = 16;
+		}
+        	}
+        	break;
+	}
+	if(b==10) {
+		switch(p[strlen(p)-2]) {
+			case 'h':
+			case 'H':
+				b = 16;
+				break;
+			case 'o':
+			case 'O':
+				b = 8;
+				break;
+			case 'b':
+			case 'B':
+				b = 2;
+				break;
+		}
+	}
+	while(((*p-'0')>=0)&&((*p-'0')<=(b-1))) n = n*b + (*p++ - '0');
+	return(f? -n: n);
+}
+#endif
+/**
  * 16-BIT REGISTERS
  */
 #define _AX 0
@@ -54,6 +122,12 @@
  * MACROS
  */
 #define _S3(X) (X<<3)
+#ifdef _BITS16
+#define LILEND(X) ((X&0xFF00)>>8)|((X&0xFF)<<8)
+#endif
+#ifdef _BITS32
+#define LILEND(X) ((X&0xFF000000)>>24)|((X&0xFF0000)>>8)|((X&0xFF00)<<8)|((X&0xFF)<<24)
+#endif
 /**
  * STRINGS
  */
@@ -159,6 +233,7 @@ const char *mov = "MOV";
 typedef struct __attribute__((packed)) LABEL {
   char *name; //label recognition
   int loc; //location in code
+  struct LABEL *sublabels; //pointer to sublabels
 } label;
 
 #endif
