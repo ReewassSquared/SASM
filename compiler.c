@@ -46,84 +46,7 @@
  *				FOR 16/32-BIT:
  *			
  */
-
-#ifndef _STDBOOL_H
-#define bool _Bool
-#define true 1
-#define false 0
-#endif
-
-#ifndef _STDDEF_H
-#define NULL ((void*) 0x0)
-#define offsetof(type, member) ((size_t) & ((type*) 0)->member)
-
-typedef signed ptrdiff_t;
-typedef unsigned size_t;
-
-#endif
-
-#ifndef _STRING_H
-size_t strlen(const char* str)
-{
-	size_t length = 0;
-	for (; str[length] != '\0'; length++);
-	return length;
-}
-
-bool strcmp(char *str1, char *str2) {
-	while(*str1++ == *str2++) {
-		if(*str1 =='\0'||*str2=='\0') return true;
-	}
-	return false;
-}
-#ifdef _BITS16
-short lilend(size_t p) {
-	return ((p&0xFF00)>>8)|((p&0xFF)<<8);
-}
-#endif
-
-#ifdef _BITS32
-int lilend(size_t p) {
-	return ((p&0xFF000000)>>24)|((p&0xFF0000)>>8)|((p&0xFF00)<<8)|((p&0xFF)<<24);
-}
-#endif
-
-int atoi(char *p)
-{
-	int n = 0, f = 0, b = 10;
-	for(;;p++) {
-        	switch(*p) {
-        	case '-':
-			f++;
-		case '+':
-			p++;
-		case '0': {
-			if(++*p=='x'||*p=='X') b = 16;
-		}
-        	}
-        	break;
-	}
-	if(b==10) {
-		switch(p[strlen(p)-2]) {
-			case 'h':
-			case 'H':
-				b = 16;
-				break;
-			case 'o':
-			case 'O':
-				b = 8;
-				break;
-			case 'b':
-			case 'B':
-				b = 2;
-				break;
-		}
-	}
-	while(((*p-'0')>=0)&&((*p-'0')<=(b-1))) n = n*b + (*p++ - '0');
-	return(f? -n: n);
-}
-#endif
-
+#include "compiler.h"
 
 char* sub(char *c, char l) { //substring
 	char *ret, *str = ret;
@@ -157,7 +80,7 @@ int ssplc(char* ret[], char* c, char l, char ca) { //string split case
 }
 
 int preprocess(char *c) {
-	while(	
+	//while(	
 }
 
 int syntax(char *c) { //checks if the string is properly formatted for compiling (1st pass)
