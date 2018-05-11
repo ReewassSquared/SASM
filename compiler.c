@@ -48,38 +48,202 @@
  */
 #include "compiler.h"
 
-char* sub(char *c, char l) { //substring
+char* sub(char *c, char l) //substring
+{ 
 	char *ret, *str = ret;
-	while(*c != l) *ret++ = *c++;
+	while (*c != l) *ret++ = *c++;
 	return str; 
 }
 
-size_t ssplen(char* c, char l) { //string split length 
+char* strch(char *c, char l, char ca)
+{
+	int i = 0;
+	while (c[i++] != l);
+	c[i] = ca;
+	return c;
+}
+
+size_t ssplen(char* c, char l) //string split length
+{
 	size_t ret = 0;
-	while(*c != '\0') {
-		if(*c == l) {
-			while(*c++ == l);
+	while (*c != '\0')
+	{
+		if (*c == l)
+		{
+			while (*c++ == l);
 			ret++;
 		}
 	}
 	return ret;
 }
 
-int ssplc(char* ret[], char* c, char l, char ca) { //string split case
+int ssplc(char* ret[], char* c, char l, char ca) //string split case
+{
 	size_t t = 0, a = 0;
-	while(*c != '\0') {
-		if(*c == l) {
+	while (*c != '\0')
+	{
+		if (*c == l)
+		{
 			a = 0;
-			while(*c++ == l);
+			while (*c++ == l);
 			t++;
 		}
-		if(*c == ca) return;
+		if (*c == ca)
+		{
+			return;
+		}
 		*c++ = ret[t][a++];
 	}
 	return ret;
 }
 
-int preprocess(char *c) {
+int seg(char *cr)
+{
+	int c = CHKS(cr);
+	switch (c)
+	{
+	case es:
+		return 0x0;
+	case cs:
+		return 0x1;
+	case ss:
+		return 0x2;
+	case ds:
+		return 0x3;
+	case fs:
+		return 0x4;
+	case gs:
+		return 0x5;
+	}
+}
+
+int reg(char *cr)
+{
+	int ret = 0;
+	if(cr[0]=='[')
+	{
+		c++;
+		c = strch(c, ']', '\0');
+		ret += 0x30;
+	}
+	int c = CHKS(cr);
+	switch (c)
+	{
+	case al:
+		ret += 0x00;
+	case ax:
+		ret += 0x10;
+	case eax:
+		ret += 0x20;
+	case cl:
+		ret += 0x01;
+	case cx:
+		ret += 0x11;
+	case ecx:
+		ret += 0x21;
+	case dx:
+		ret += 0x02;
+	case dl:
+		ret += 0x12;
+	case edx:
+		ret += 0x22;
+	case bx:
+		ret += 0x03;
+	case bl:
+		ret += 0x13;
+	case ebx:
+		ret += 0x23;
+	case sp:
+		ret += 0x04;
+	case ah:
+		ret += 0x14;
+	case esp:
+		ret += 0x24;
+	case bp:
+		ret += 0x05;
+	case ch:
+		ret += 0x15;
+	case ebp:
+		ret += 0x25;
+	case si:
+		ret += 0x06;
+	case dh:
+		ret += 0x16;
+	case esi:
+		ret += 0x26;
+	case di:
+		ret += 0x07;
+	case bh:
+		ret += 0x17;
+	case edi:
+		ret += 0x27;
+	default:
+		ret += 0xFF;
+	}
+	return ret;
+}
+
+bool reg8(char *cr)
+{
+	int c = CHKS(cr);
+	switch (c)
+	{
+	case al:
+	case bl:
+	case cl:
+	case dl:
+	case ah:
+	case bh:
+	case ch:
+	case dh:
+		return true;
+	default:
+		return false;
+	}
+}
+
+bool reg16(char *cr)
+{
+	int c = CHKS(cr);
+	switch (c)
+	{
+	case ax:
+	case bx:
+	case cx:
+	case dx:
+	case sp:
+	case bp:
+	case si:
+	case di:
+		return true;
+	default:
+		return false;
+	}
+}
+
+#ifdef _BITS32
+bool reg32(char *cr)
+{
+	int c = CHKS(cr);
+	switch (c)
+	{
+	case eax:
+	case ebx:
+	case ecx:
+	case edx:
+	case esp:
+	case ebp:
+	case esi:
+	case edi:
+		return true;
+	default:
+		return false;
+	}
+}
+#endif
+
+int preprocess(char *c)
+{
 	//while(	
 }
 
@@ -90,15 +254,98 @@ int syntax(char *c) { //checks if the string is properly formatted for compiling
 int compile(char *c) { //compiles a properly-formatted string into code (2nd pass)
 	unsigned char *out;
 	int* labels;
-	while(c++ != 0x00) { //this makes me cringe i'll fix it later
+	while (c++ != 0x00) //this makes me cringe i'll fix it later
+	{
 		char *ln = sub(c, '\n');
 		char* parse[ssplen(ln, ' ')];
 		ssplc(ln, ' ', ';');
-		if(parse[0] == "db") {
-			*out = atoi(parse[1]);
+		if (strcmp(parse[0], "DB"))
+		{
+			*out++ = atoi(parse[1]);
 		}
-		else if(parse[0] == "mov") {
+		else if(strcmp(parse[0], "MOV"))
+		{
+			int r1 = reg(parse[1]);
+			int r2 = reg(parse[2]);
+			if (r1!=0xFF)
+			{
+				#ifdef _BITS16
+				if (reg32(r1)) return -1;
+				#endif
+				if (r2!=0xFF&&r1<0x30) //reg<-reg
+				{
 
+					switch ((r2&0xF0)>>4)
+					{
+					case 1: //8
+						if ((r1&0xF0)>>4!=1)
+						{
+							return -1; //error- operands must be same size
+						}
+						*out++ = 0x89;
+						*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+						break;
+					case 0:
+						if((r1&0xF0)>>4==1)
+						{
+							return -1;
+						}
+						#ifdef _BITS16
+						*out++ = 0x66;
+						#endif
+						*out++ = 0x89;
+						*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+						break;
+					case 2:
+						if((r1&0xF0)>>4==1)
+						{
+							return -1;
+						}
+						#ifdef _BITS32
+						*out++ = 0x66;
+						#endif
+						*out++ = 0x89;
+						*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+						break;
+					case 3: //reg<-[reg]
+						if((r1&0xF0)>>4==1)
+						{
+							return -1;
+						}
+						#ifdef _BITS16
+						*out++ = 0x66;
+						#endif
+						*out++ = 0x8B;
+						*out++ = S3(r1&0xF)+(r2&0xF);
+					case 4:
+						if((r1&0xF0)>>4!=1)
+						{
+							return -1;
+						}
+						*out++ = 0x8A;
+						*out++ = S3(r1&0xF)+(r2&0xF);
+					case 5:
+						if((r1&0xF0)>>4==1)
+						{
+							return -1;
+						}
+						#ifdef _BITS32
+						*out++ = 0x66;
+						#endif
+						*out++ = 0x8B;
+						*out++ = S3(r1&0xF)+(r2&0xF);
+					}
+				}
+				else if(r1<0x30)
+				{
+					
+				}
+			}
+			else
+			{
+				
+			}
+			
 		}
 	}
 }

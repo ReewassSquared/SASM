@@ -34,9 +34,14 @@ size_t strlen(const char* str)
 	return length;
 }
 
-bool strcmp(char *str1, char *str2) {
-	while(*str1++ == *str2++) {
-		if(*str1 =='\0'||*str2=='\0') return true;
+bool strcmp(char *str1, char *str2)
+{
+	while (*str1++ == *str2++)
+	{
+		if (*str1 =='\0'||*str2=='\0')
+		{
+			return true;
+		}
 	}
 	return false;
 }
@@ -44,38 +49,58 @@ bool strcmp(char *str1, char *str2) {
 int atoi(char *p)
 {
 	int n = 0, f = 0, b = 10;
-	for(;;p++) {
-        	switch(*p) {
+	for (;;p++)
+	{
+        	switch (*p)
+		{
         	case '-':
 			f++;
 		case '+':
 			p++;
-		case '0': {
-			if(++*p=='x'||*p=='X') b = 16;
-		}
+		case '0':
+			if (++*p=='x'||*p=='X')
+			{
+				b = 16;
+			}
         	}
         	break;
 	}
-	if(b==10) {
-		switch(p[strlen(p)-2]) {
-			case 'h':
-			case 'H':
-				b = 16;
-				break;
-			case 'o':
-			case 'O':
-				b = 8;
-				break;
-			case 'b':
-			case 'B':
-				b = 2;
-				break;
+	if (b==10)
+	{
+		switch (p[strlen(p)-2])
+		{
+		case 'h':
+		case 'H':
+			b = 16;
+			break;
+		case 'o':
+		case 'O':
+			b = 8;
+			break;
+		case 'b':
+		case 'B':
+			b = 2;
+			break;
 		}
 	}
-	while(((*p-'0')>=0)&&((*p-'0')<=(b-1))) n = n*b + (*p++ - '0');
-	return(f? -n: n);
+	while (((*p-'0')>=0)&&((*p-'0')<=(b-1)))
+	{
+		n = n*b + (*p++ - '0');
+	{
+	return (f? -n: n);
 }
 #endif
+/**
+ * EVEN MORE OBSCURE METHODS
+ */
+int CHKS(char *c)
+{
+	int ret;
+	for(int i = 0;(i<strlen(c))||(i<4); i++) {
+		ret += (ret*256) + *c++;
+	}
+	return ret;
+}
 /**
  * 16-BIT REGISTERS
  */
@@ -123,44 +148,44 @@ int atoi(char *p)
  */
 #define _S3(X) (X<<3)
 #ifdef _BITS16
-#define LILEND(X) ((X&0xFF00)>>8)|((X&0xFF)<<8)
+#define LILEND(X) ((X&0xFF00)>>8)|((X&0xFF)<<8) //sorry
 #endif
 #ifdef _BITS32
-#define LILEND(X) ((X&0xFF000000)>>24)|((X&0xFF0000)>>8)|((X&0xFF00)<<8)|((X&0xFF)<<24)
+#define LILEND(X) ((X&0xFF000000)>>24)|((X&0xFF0000)>>8)|((X&0xFF00)<<8)|((X&0xFF)<<24) //so sorry
 #endif
 /**
  * STRINGS
  */
-const char *ax = "AX";
-const char *cx = "CX";
-const char *dx = "DX";
-const char *bx = "BX";
-const char *sp = "SP";
-const char *bp = "BP";
-const char *si = "SI";
-const char *di = "DI";
-const char *al = "AL";
-const char *cl = "CL";
-const char *dl = "DL";
-const char *bl = "BL";
-const char *ah = "AH";
-const char *ch = "CH";
-const char *dh = "DH";
-const char *bh = "BH";
-const char *eax = "EAX";
-const char *ecx = "ECX";
-const char *edx = "EDX";
-const char *ebx = "EBX";
-const char *esp = "ESP";
-const char *ebp = "EBP";
-const char *esi = "ESI";
-const char *edi = "EDI";
-const char *es = "ES";
-const char *cs = "CS";
-const char *ss = "SS";
-const char *ds = "DS";
-const char *fs = "FS";
-const char *gs = "GS";
+const char *ax = CHKS("AX");
+const char *cx = CHKS("CX");
+const char *dx = CHKS("DX");
+const char *bx = CHKS("BX");
+const char *sp = CHKS("SP");
+const char *bp = CHKS("BP");
+const char *si = CHKS("SI");
+const char *di = CHKS("DI");
+const char *al = CHKS("AL");
+const char *cl = CHKS("CL");
+const char *dl = CHKS("DL");
+const char *bl = CHKS("BL");
+const char *ah = CHKS("AH");
+const char *ch = CHKS("CH");
+const char *dh = CHKS("DH");
+const char *bh = CHKS("BH");
+const char *eax = CHKS("EAX");
+const char *ecx = CHKS("ECX");
+const char *edx = CHKS("EDX");
+const char *ebx = CHKS("EBX");
+const char *esp = CHKS("ESP");
+const char *ebp = CHKS("EBP");
+const char *esi = CHKS("ESI");
+const char *edi = CHKS("EDI");
+const char *es = CHKS("ES");
+const char *cs = CHKS("CS");
+const char *ss = CHKS("SS");
+const char *ds = CHKS("DS");
+const char *fs = CHKS("FS");
+const char *gs = CHKS("GS");
 /**
  * OPCODES FOR x86
  */
@@ -216,7 +241,7 @@ const char *mov = "MOV";
 /**
  * NOTE:
  * no need to store the other variables as strings
- * since we decided to not use the original "pure"
+ * since we decided to not use the original CHKS("pure"
  * version of SASM formatting (although this does
  * not mean that we won't implement it later).
  *
@@ -230,10 +255,11 @@ const char *mov = "MOV";
  * TYPEDEFS
  */
 
-typedef struct __attribute__((packed)) LABEL {
-  char *name; //label recognition
-  int loc; //location in code
-  struct LABEL *sublabels; //pointer to sublabels
+typedef struct __attribute__((packed)) LABEL
+{
+  char *name; 			//label recognition
+  int loc; 			//location in code
+  struct LABEL *sublabels; 	//pointer to sublabels
 } label;
 
 #endif
