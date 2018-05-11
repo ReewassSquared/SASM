@@ -331,11 +331,12 @@ int syntax(char *c) { //checks if the string is properly formatted for compiling
 int compile(char *c) { //compiles a properly-formatted string into code (2nd pass)
 	unsigned char *out;
 	int* labels;
-	while (c++ != 0x00) //this makes me cringe i'll fix it later
+	while (++*c != '\0') //this makes me cringe i'll fix it later
 	{
 		char *ln = sub(c, '\n');
-		char* parse[ssplen(ln, ' ')];
-		ssplc(ln, ' ', ';');
+		c += strlen(ln);
+		static char* parse[ssplen(ln, ' ')];
+		ssplc(parse ,ln, ' ', ';');
 		if (strcmp(parse[0], "DB"))
 		{
 			*out++ = atoi(parse[1]);
