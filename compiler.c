@@ -76,6 +76,17 @@ bool strcmp(char *str1, char *str2) {
 	}
 	return false;
 }
+#ifdef _BITS16
+short lilend(size_t p) {
+	return ((p&0xFF00)>>8)|((p&0xFF)<<8);
+}
+#endif
+
+#ifdef _BITS32
+int lilend(size_t p) {
+	return ((p&0xFF000000)>>24)|((p&0xFF0000)>>8)|((p&0xFF00)<<8)|((p&0xFF)<<24);
+}
+#endif
 
 int atoi(char *p)
 {
@@ -145,6 +156,10 @@ int ssplc(char* ret[], char* c, char l, char ca) { //string split case
 	return ret;
 }
 
+int preprocess(char *c) {
+	while(	
+}
+
 int syntax(char *c) { //checks if the string is properly formatted for compiling (1st pass)
 
 }
@@ -152,7 +167,7 @@ int syntax(char *c) { //checks if the string is properly formatted for compiling
 int compile(char *c) { //compiles a properly-formatted string into code (2nd pass)
 	unsigned char *out;
 	int* labels;
-	while(c++ != 0x00) {
+	while(c++ != 0x00) { //this makes me cringe i'll fix it later
 		char *ln = sub(c, '\n');
 		char* parse[ssplen(ln, ' ')];
 		ssplc(ln, ' ', ';');
