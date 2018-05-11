@@ -177,6 +177,38 @@ int reg(char *cr)
 		ret += 0x17;
 	case edi:
 		ret += 0x27;
+	case cr0:
+		ret += 0x70;
+	case cr1:
+		ret += 0x71;
+	case cr2:
+		ret += 0x72;
+	case cr3:
+		ret += 0x73;
+	case cr4:
+		ret += 0x74;
+	case cr5:
+		ret += 0x75;
+	case cr6:
+		ret += 0x76;
+	case cr7:
+		ret += 0x77;
+	case db0:
+		ret += 0x80;
+	case db1:
+		ret += 0x81;
+	case db2:
+		ret += 0x82;
+	case db3:
+		ret += 0x83;
+	case db4:
+		ret += 0x84;
+	case db5:
+		ret += 0x85;
+	case db6:
+		ret += 0x86;
+	case db7:
+		ret += 0x87;
 	default:
 		ret += 0xFF;
 	}
@@ -272,78 +304,105 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 				#ifdef _BITS16
 				if (reg32(r1)) return -1;
 				#endif
-				if (r2!=0xFF&&r1<0x30) //reg<-reg
+				if(r2!=0xFF&&r2>=0x70)
 				{
-
-					switch ((r2&0xF0)>>4)
+					if(r2>=0xA0)
 					{
-					case 1: //8
-						if ((r1&0xF0)>>4!=1)
-						{
-							return -1; //error- operands must be same size
-						}
-						*out++ = 0x89;
-						*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
-						break;
-					case 0:
-						if((r1&0xF0)>>4==1)
-						{
-							return -1;
-						}
-						#ifdef _BITS16
-						*out++ = 0x66;
-						#endif
-						*out++ = 0x89;
-						*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
-						break;
-					case 2:
-						if((r1&0xF0)>>4==1)
-						{
-							return -1;
-						}
-						#ifdef _BITS32
-						*out++ = 0x66;
-						#endif
-						*out++ = 0x89;
-						*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
-						break;
-					case 3: //reg<-[reg]
-						if((r1&0xF0)>>4==1)
-						{
-							return -1;
-						}
-						#ifdef _BITS16
-						*out++ = 0x66;
-						#endif
-						*out++ = 0x8B;
-						*out++ = S3(r1&0xF)+(r2&0xF);
-					case 4:
-						if((r1&0xF0)>>4!=1)
-						{
-							return -1;
-						}
-						*out++ = 0x8A;
-						*out++ = S3(r1&0xF)+(r2&0xF);
-					case 5:
-						if((r1&0xF0)>>4==1)
-						{
-							return -1;
-						}
-						#ifdef _BITS32
-						*out++ = 0x66;
-						#endif
-						*out++ = 0x8B;
-						*out++ = S3(r1&0xF)+(r2&0xF);
+						return -1; //dbn, crn access must be reg<-reg
+					}
+					if(r1>=0x70)
+					{
+						return -1; //dbn, cbn cannot access each other	
+					}
+					else
+					{
+						*out++ = 0x0F;
+						*out++ = 0x20 + ((r2&0x80)>>7); //magic
+						*out++ = 0xC0 + ((r2&0x0F)<<3) + (r1&0xF0);
 					}
 				}
-				else if(r1<0x30)
+				else if (r2!=0xFF&&r1<0x30) //reg<-reg
 				{
-					
+					if(r1>=0x70)
+					{
+						*out++ = 0x0F;
+						*out++ 0x22 + ((r1&0x80)>>7);
+						*out++ = 0xC0 + ((r2&0x0F)>>3) + (r1&0x0F);
+					}
+					else
+					{
+						switch ((r2&0xF0)>>4)
+						{
+						case 1: //8
+							if ((r1&0xF0)>>4!=1)
+							{
+								return -1; //error- operands must be same size
+							}
+							*out++ = 0x89;
+							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							break;
+						case 0:
+							if((r1&0xF0)>>4==1)
+							{
+								return -1;
+							}
+							#ifdef _BITS16
+							*out++ = 0x66;
+							#endif
+							*out++ = 0x89;
+							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							break;
+						case 2:
+							if((r1&0xF0)>>4==1)
+							{
+								return -1;
+							}
+							#ifdef _BITS32
+							*out++ = 0x66;
+							#endif
+							*out++ = 0x89;
+							*out++ = 0xC0+S3(r1&0xF)+(r2&0xF);
+							break;
+						case 3: //reg<-[reg]
+							if((r1&0xF0)>>4==1)
+							{
+								return -1;
+							}
+							#ifdef _BITS16
+							*out++ = 0x66;
+							#endif
+							*out++ = 0x8B;
+							*out++ = S3(r1&0xF)+(r2&0xF);
+							break;
+						case 4:
+							if((r1&0xF0)>>4!=1)
+							{
+								return -1;
+							}
+							*out++ = 0x8A;
+							*out++ = S3(r1&0xF)+(r2&0xF);
+							break;
+						case 5:
+							if((r1&0xF0)>>4==1)
+							{
+								return -1;
+							}
+							#ifdef _BITS32
+							*out++ = 0x66;
+							#endif
+							*out++ = 0x8B;
+							*out++ = S3(r1&0xF)+(r2&0xF);
+							break;
+						}
+				}
+				else if(r1==0xFF)
+				{
+					//idh the paper w/ my notes rn ill write this later
 				}
 			}
 			else
 			{
-				
+				//uses immediates 
 			}
 			
 		}
