@@ -119,6 +119,12 @@ int seg(char *cr)
 	}
 }
 
+int genmodrm(char *r1, char *r2)
+{
+	int retval;
+	
+}
+
 int reg(char *cr)
 {
 	int ret = 0;
@@ -126,6 +132,10 @@ int reg(char *cr)
 	{
 		c++;
 		c = strch(c, ']', '\0');
+		if(strocc(c, '+'))
+		{
+			ret += 0x08;
+		}
 		ret += 0x30;
 	}
 	int c = CHKS(cr);
@@ -270,6 +280,13 @@ bool regseg(char *cr)
 	default:
 		return false;
 	}
+}
+
+int parse_offset(char *c)
+{
+	c = rmbrck(c);
+	c = sub(c, '+');
+	c
 }
 
 #ifdef _BITS32
@@ -537,12 +554,16 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 							*out++ = 0x89;
 							if (r1>=0X30)
 							{
-								if (!(((r1&0xF==0x6)||(r1&0xF==0x7))&&((r1&0xF0)>>4)!=4))
+								if (!(((r1&0x7==0x6)||(r1&0x7==0x7))&&((r1&0xF0)>>4)!=4))
 								{
 									return -1;
 								}
 								*out++ = 0x67;
-								*out++ = S3(r1&0xF)+(r2&0xF);
+								*out++ = (r1&0x8) ? (0x40+S3(r1&0xF)+(r2&0xF)) : (S3(r1&0xF)+(r2&0xF));
+								if(r1&0x8)
+								{
+									int imm8 = parse_offset(parse[1]);
+								}
 							}
 							else 
 							{
