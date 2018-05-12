@@ -9,6 +9,14 @@
 #ifndef _SASM_H
 #define _SASM_H
 /**
+ * NOTE: REQUIRES malloc() AND calloc() TO BE DEFINED
+ */
+#ifndef _LIBALLOC_H
+#error "ERROR: NO MEMORY ALLOCATOR LIBRARY DEFINED"
+#elif _LIBALLOC_H
+#inclide <liballoc.h>
+#endif
+/**
  * IMPORTANT STUFF I COULDN'T DECIDE WHERE TO PUT
  */
 #ifndef _STDBOOL_H
@@ -24,6 +32,14 @@
 typedef signed ptrdiff_t;
 typedef unsigned size_t;
 
+#endif
+
+#ifndef _STDARG_H
+typedef __builtin_va_list va_list;
+#define va_start(X, Y) __builtin_va_start(X, Y)
+#define va_end(X) __builtin_va_end(X)
+#define va_arg(X, Y) __builtin_va_arg(X, Y)
+#define va_copy(X, Y) __builtin_va_copy(X, Y)
 #endif
 
 #ifndef _STRING_H
@@ -259,7 +275,36 @@ typedef struct __attribute__((packed)) LABEL
 {
   char *name; 			//label recognition
   int loc; 			//location in code
-  struct LABEL *sublabels; 	//pointer to sublabels
 } label;
+		
+typedef struct ELEM
+{
+	label *l;
+	struct ELEM *next;
+} elem;
+
+typedef struct LABEL_LIST
+{
+	bool isroot;
+	label *parent;
+	elem *first;
+} label_list;
+		
+label_list root;
+		
+void label_add(label_list *ll, char *n, int oc, bool ch, ...)
+{
+	va_list args;
+	va_start(args, ch);
+	if(ch)
+	{
+		label *parent = va_arg(args, label*);
+		//fuck me ill do it later.
+	}
+	label *l = (label *) malloc(sizeof(label));
+	label->name = n;
+	label->loc = oc;
+	
+}
 
 #endif
