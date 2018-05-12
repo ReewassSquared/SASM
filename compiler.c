@@ -341,6 +341,156 @@ int compile(char *c) { //compiles a properly-formatted string into code (2nd pas
 		{
 			*out++ = atoi(parse[1]);
 		}
+		else if (strcmp(parse[1], "IN"))
+		{
+			r1 = reg(parse[1]);
+			r2 = reg(parse[2]);
+			if (r1==r2)
+			{
+				return -1;
+			}
+			if ((r2!=0x02&&!isnum(parse[2]))||(r1&0xF!=0))
+			{
+				return -1;
+			}
+			if (isnum(parse[2]))
+			{
+				int imm8 = atoi(parse[2]);
+				if (imm8 > 0xFF)
+				{
+					return -1;
+				}
+				switch ((r1&0xF0)>>4)
+				{
+				case 0:
+					#ifdef _BITS32
+					*out++ = 0x66;
+					#endif
+					*out++ = 0xE5;
+					*out++ = (unsigned char) imm8;
+					break;
+				case 1:
+					*out++ = 0xE4;
+					*out++ = (unsigned char) imm8;
+					break;
+				case 2:
+					*out++ = 0xE5;
+					*out++ = (unsigned char) imm8;
+					break;
+				default:
+					return -1;
+				}
+			}
+			else
+			{
+				switch ((r1&0xF0)>>4)
+				{
+					case 0:
+						#ifdef _BITS32
+						*out++ = 0x66;
+						#endif
+						*out++ = 0xED;
+						break;
+					case 1:
+						*out++ = 0xEC;
+						break;
+					case 2:
+						*out++ = 0xED;
+						break;
+					default:
+						return -1;
+				}
+			}
+		}
+		else if (strcmp(parse[0], "OUT"))
+		{
+			r1 = reg(parse[1]);
+			r2 = reg(parse[2]);
+			if (r1==r2)
+			{
+				return -1;
+			}
+			if ((r1!=0x02&&!isnum(parse[1]))||(r2&0xF!=0))
+			{
+				return -1;
+			}
+			if (isnum(parse[1]))
+			{
+				int imm8 = atoi(parse[1]);
+				if (imm8 > 0xFF)
+				{
+					return -1;
+				}
+				switch ((r1&0xF0)>>4)
+				{
+				case 0:
+					#ifdef _BITS32
+					*out++ = 0x66;
+					#endif
+					*out++ = 0xE7;
+					*out++ = (unsigned char) imm8;
+					break;
+				case 1:
+					*out++ = 0xE6;
+					*out++ = (unsigned char) imm8;
+					break;
+				case 2:
+					*out++ = 0xE7;
+					*out++ = (unsigned char) imm8;
+					break;
+				default:
+					return -1;
+				}
+			}
+			else
+			{
+				switch ((r1&0xF0)>>4)
+				{
+					case 0:
+						#ifdef _BITS32
+						*out++ = 0x66;
+						#endif
+						*out++ = 0xEF;
+						break;
+					case 1:
+						*out++ = 0xEE;
+						break;
+					case 2:
+						*out++ = 0xEF;
+						break;
+					default:
+						return -1;
+				}
+			}
+		}
+		else if (strcmp(parse[0], "INT"))
+		{
+			if (isnum(parse[1]))
+			{
+				return -1;
+			}
+			else
+			{
+				imm8 = atoi(parse[1]);
+				if (imm8>0xFF)
+				{
+					return -1
+				}
+				else if (imm8==3)
+				{
+					*out++ = 0xCC;
+				}
+				else
+				{
+					*out++ = 0xCD;
+					*out++ = (unsigned char) imm8;
+				}
+			}
+		}
+		else if (strcmp(parse[0], "IRET"))
+		{
+			*out++ = 0xCF;	
+		}
 		else if (strcmp(parse[0], "MOV"))
 		{
 			int r1 = reg(parse[1]);
